@@ -12,5 +12,5 @@ class TestspiderItem(scrapy.Item):
     
     title = scrapy.Field()
     text = scrapy.Field()
-    links = scrapy.Field()
+    url = scrapy.Field()
     images = scrapy.Field()

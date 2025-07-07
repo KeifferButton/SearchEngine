@@ -14,6 +14,7 @@ NEWSPIDER_MODULE = "testspider.spiders"
 
 ADDONS = {}
 
+DEPTH_LIMIT = 2
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "testspider (+http://www.yourdomain.com)"
@@ -58,9 +59,9 @@ DOWNLOAD_DELAY = 1
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "testspider.pipelines.TestspiderPipeline": 300,
-#}
+ITEM_PIPELINES = {
+    "testspider.pipelines.TestspiderPipeline": 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
