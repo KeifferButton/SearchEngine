@@ -1,14 +1,19 @@
 import scrapy
 from ..items import TestspiderItem
 
-class Spider(scrapy.Spider):
-    name = 'spiderbot'
-    start_urls = [
-        'https://quotes.toscrape.com/'
-    ]
+class GenericSpider(scrapy.Spider):
+    name = 'generic'
     
-    # Track which urls have been visited to avoid revisiting the same page
-    visited_urls = set()
+    # Initialize spider values
+    def __init__(self, start_url=None, spider_name=None, *args, **kwargs):
+        super(GenericSpider, self).__init__(*args, **kwargs)
+        if not start_url:
+            raise ValueError("Must pass a start_url to the spider.")
+        self.start_urls = [start_url]
+        if spider_name:
+            self.name = spider_name
+        # Track which urls have been visited to avoid revisiting the same page
+        self.visited_urls = set()
     
     def parse(self, response):
         
