@@ -24,7 +24,6 @@ class TestspiderPipeline:
                 url TEXT UNIQUE,
                 title TEXT,
                 text TEXT,
-                images TEXT
             )
         ''')
         
