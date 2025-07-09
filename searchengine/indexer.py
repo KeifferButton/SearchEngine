@@ -14,7 +14,7 @@ def ensure_nltk_resources():
         'omw-1.4',
         'punkt',
         'averaged_perceptron_tagger',
-        'averaged_perceptron_tagger_eng',  # ← this is the missing one
+        'averaged_perceptron_tagger_eng',
         'stopwords'
     ]:
         try:
@@ -126,9 +126,13 @@ if max_id:
         # Update tf-idf for each occurence of this term
         cursor.execute('SELECT page_id, frequency FROM index_terms WHERE term = ?', (term,))
         for page_id, freq, in cursor.fetchall():
-            # Log-Normalized TF
-            tf = 1 + math.log(freq)
+            # Combined Log Normalization and Length Normalization
+            cursor.execute('SELECT SUM(frequency) FROM index_terms WHERE page_id = ?', (page_id,))
+            total_terms = cursor.fetchone()[0] or 1  # Prevent division by zero
+            
+            tf = (1 + math.log(freq)) / (1 + math.log(total_terms))
             tfidf = tf * idf
+            
             cursor.execute('''
                 UPDATE index_terms
                 SET tfidf = ?
