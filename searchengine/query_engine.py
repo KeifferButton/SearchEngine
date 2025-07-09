@@ -12,21 +12,19 @@ from collections import defaultdict
 from config import DB_PATH
 
 def ensure_nltk_resources():
-    for resource in [
-        'wordnet',
-        'omw-1.4',
-        'punkt',
-        'averaged_perceptron_tagger',
-        'averaged_perceptron_tagger_eng',
-        'stopwords'
-    ]:
+    resource_paths = {
+        'wordnet': 'corpora/wordnet',
+        'omw-1.4': 'corpora/omw-1.4',
+        'punkt_tab': 'tokenizers/punkt',
+        'averaged_perceptron_tagger': 'taggers/averaged_perceptron_tagger',
+        'stopwords': 'corpora/stopwords'
+    }
+
+    for resource, path in resource_paths.items():
         try:
-            nltk.data.find(f'corpora/{resource}')  # corpus lookup
+            nltk.data.find(path)
         except LookupError:
-            try:
-                nltk.data.find(f'taggers/{resource}')  # tagger lookup
-            except LookupError:
-                nltk.download(resource)
+            nltk.download(resource)
 
 ensure_nltk_resources()
 
