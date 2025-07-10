@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Search Engine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+    }
+    .result {
+      margin-bottom: 1.5em;
+    }
+    .result b {
+      background-color: yellow;
+    }
+  </style>
+</head>
+<body>
+  <h1>Search</h1>
+  <form id="searchForm">
+    <input type="text" id="query" placeholder="Enter your search..." size="40">
+    <button type="submit">Search</button>
+  </form>
+
+  <div id="correction" style="margin-top: 1em;"></div>
+  <div id="results" style="margin-top: 2em;"></div>
+
+  <script>
+    document.getElementById('searchForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const query = document.getElementById('query').value;
+      const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      const resultsContainer = document.getElementById('results');
+      const correctionContainer = document.getElementById('correction');
+
+      resultsContainer.innerHTML = '';
+      correctionContainer.innerHTML = '';
+
+      if (data.original_query !== data.corrected_query && !data.used_raw_query) {
+        correctionContainer.innerHTML = `
+          Showing results for <b>${data.corrected_query}</b>. 
+          <a href="?q=${encodeURIComponent(data.original_query)}&raw=true">Search instead for "${data.original_query}"</a>
+        `;
+      }
+
+      if (data.results.length === 0) {
+        resultsContainer.innerHTML = "<p>No results found.</p>";
+      } else {
+        data.results.forEach(result => {
+          const div = document.createElement('div');
+          div.className = "result";
+          div.innerHTML = `
+            <a href="${result.url}" target="_blank"><h3>${result.title}</h3></a>
+            <p>${result.snippet}</p>
+            <small>Relevance Score: ${result.score.toFixed(3)}</small>
+          `;
+          resultsContainer.appendChild(div);
+        });
+      }
+    });
+  </script>
+</body>
+</html>

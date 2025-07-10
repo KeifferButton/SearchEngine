@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from query_engine import search
 
 app = Flask(__name__)
@@ -19,6 +19,10 @@ def handle_search():
         "used_raw_query": use_raw,
         "results": results
     })
+    
+@app.route("/")
+def index():
+    return render_template("index.html")
     
 if __name__ == "__main__":
     app.run(debug=True)
