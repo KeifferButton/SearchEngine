@@ -1,29 +1,12 @@
 import sqlite3
 import re
 import math
-import nltk
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag
 from collections import Counter
 from config import DB_PATH
-
-def ensure_nltk_resources():
-    for resource in [
-        'wordnet',
-        'omw-1.4',
-        'punkt',
-        'averaged_perceptron_tagger',
-        'averaged_perceptron_tagger_eng',
-        'stopwords'
-    ]:
-        try:
-            nltk.data.find(f'corpora/{resource}')  # corpus lookup
-        except LookupError:
-            try:
-                nltk.data.find(f'taggers/{resource}')  # tagger lookup
-            except LookupError:
-                nltk.download(resource)
+from utils.nltk_helper import ensure_nltk_resources
 
 ensure_nltk_resources()
 

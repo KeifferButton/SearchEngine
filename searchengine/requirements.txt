@@ -1,0 +1,4 @@
+Flask==3.0.2
+nltk==3.8.1
+scrapy==2.11.1
+textblob==0.17.1

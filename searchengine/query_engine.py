@@ -1,8 +1,5 @@
-import argparse
-import sys
 import re
 import sqlite3
-import nltk
 from nltk import pos_tag
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
@@ -10,21 +7,7 @@ from nltk.tokenize import sent_tokenize
 from textblob import TextBlob
 from collections import defaultdict
 from config import DB_PATH
-
-def ensure_nltk_resources():
-    resource_paths = {
-        'wordnet': 'corpora/wordnet',
-        'omw-1.4': 'corpora/omw-1.4',
-        'punkt_tab': 'tokenizers/punkt',
-        'averaged_perceptron_tagger': 'taggers/averaged_perceptron_tagger',
-        'stopwords': 'corpora/stopwords'
-    }
-
-    for resource, path in resource_paths.items():
-        try:
-            nltk.data.find(path)
-        except LookupError:
-            nltk.download(resource)
+from utils.nltk_helper import ensure_nltk_resources
 
 ensure_nltk_resources()
 
