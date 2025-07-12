@@ -14,12 +14,73 @@
     .result b {
       background-color: yellow;
     }
+    #historyDropdown {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      width: 300px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+      padding: 0;
+      margin-top: 2px;
+      border-radius: 4px;
+    }
+    #historyDropdown .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4em 0.6em;
+      cursor: pointer;
+    }
+    #historyDropdown li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    #historyDropdown li:hover {
+      background-color: #f0f0f0;
+    }
+
+    #historyDropdown li a {
+      flex-grow: 1;
+      text-decoration: none;
+      color: #000;
+    }
+
+    #historyDropdown .remove {
+      margin-left: 8px;
+      color: red;
+      font-size: 0.9em;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #historyDropdown .history-item:hover {
+      background-color: #f0f0f0;
+    }
+    .remove-history {
+      color: red;
+      margin-left: 1em;
+      font-size: 0.9em;
+      cursor: pointer;
+    }
+    .input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
   <h1>Search</h1>
   <form id="searchForm">
-    <input type="text" id="query" placeholder="Enter your search..." size="40">
+    <div class="input-wrapper">
+      <input type="text" id="query" placeholder="Enter your search..." size="40" autocomplete="off">
+      <div id="historyDropdown"></div>
+    </div>
     <button type="submit">Search</button>
   </form>
 
@@ -27,11 +88,16 @@
   <div id="results" style="margin-top: 2em;"></div>
 
   <script>
-    document.getElementById('searchForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
+    async function handleSearchEvent(query, raw = false, push = true) {
+      const queryInput = document.getElementById('query');
+      queryInput.value = query;
 
-      const query = document.getElementById('query').value;
-      const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+      if (push) {
+        const newUrl = `?q=${encodeURIComponent(query)}${raw ? '&raw=true' : ''}`;
+        history.pushState(null, '', newUrl);
+      }
+
+      const response = await fetch(`/search?q=${encodeURIComponent(query)}${raw ? '&raw=true' : ''}`);
       const data = await response.json();
 
       const resultsContainer = document.getElementById('results');
@@ -60,6 +126,126 @@
           `;
           resultsContainer.appendChild(div);
         });
+      }
+
+      // Update the document title
+      document.title = `Search results for "${query}"`;
+
+      // Blur the input to collapse dropdown
+      queryInput.blur();
+
+      // Hide dropdown
+      document.getElementById('historyDropdown').style.display = 'none';
+
+      updateSearchHistory(query);
+
+    }
+
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const query = document.getElementById('query').value.trim();
+      if (query) {
+        handleSearchEvent(query);
+      }
+    });
+
+    // Run search if URL has ?q= on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get('q');
+      const raw = params.get('raw') === 'true';
+      if (query) {
+        document.getElementById('query').value = query;
+        history.replaceState(null, '', window.location.href);
+        handleSearchEvent(query, raw, false);
+      }
+    });
+
+    // Re-run search when navigating with browser forward/back buttons
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get('q');
+      const raw = params.get('raw') === 'true';
+      if (query) {
+        handleSearchEvent(query, raw, false);
+      } else {
+        document.getElementById('query').value = '';
+        document.getElementById('results').innerHTML = '';
+        document.getElementById('correction').innerHTML = '';
+        document.title = 'My Search Engine';
+      }
+    });
+
+    function updateSearchHistory(query) {
+      let history = JSON.parse(localStorage.getItem('searchHistory')) || [];
+
+      // Remove if it already exists and re-add to front
+      history = history.filter(q => q !== query);
+      history.unshift(query);
+
+      // Limit to 10
+      if (history.length > 10) history = history.slice(0, 10);
+      localStorage.setItem('searchHistory', JSON.stringify(history));
+
+      renderDropdownHistory();
+    }
+
+    function renderDropdownHistory() {
+      const input = document.getElementById('query');
+      const dropdown = document.getElementById('historyDropdown');
+      const history = JSON.parse(localStorage.getItem('searchHistory')) || [];
+
+      dropdown.innerHTML = '';
+      if (history.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      dropdown.style.display = 'block';
+      dropdown.style.left = `${input.offsetLeft}px`;
+      dropdown.style.top = `${input.offsetTop + input.offsetHeight}px`;
+      dropdown.style.width = `${input.offsetWidth}px`;
+
+      history.forEach(q => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+
+        const term = document.createElement('span');
+        term.textContent = q;
+        term.addEventListener('mousedown', () => {
+          input.value = q;
+          handleSearchEvent(q);
+          dropdown.style.display = 'none';
+        });
+
+        const remove = document.createElement('span');
+        remove.textContent = '×';
+        remove.className = 'remove-history';
+        remove.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          removeSearchFromHistory(q);
+        });
+
+        item.appendChild(term);
+        item.appendChild(remove);
+        dropdown.appendChild(item);
+      });
+    }
+
+    function removeSearchFromHistory(query) {
+      let history = JSON.parse(localStorage.getItem('searchHistory')) || [];
+      history = history.filter(q => q !== query);
+      localStorage.setItem('searchHistory', JSON.stringify(history));
+      renderDropdownHistory();
+    }
+
+    document.getElementById('query').addEventListener('focus', renderDropdownHistory);
+    document.getElementById('query').addEventListener('input', renderDropdownHistory);
+
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('query').contains(e.target) &&
+          !document.getElementById('historyDropdown').contains(e.target)) {
+        document.getElementById('historyDropdown').style.display = 'none';
       }
     });
   </script>

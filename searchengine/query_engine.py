@@ -32,23 +32,36 @@ def search(query, use_raw_query=False, limit=20):
 
     lemmatizer = WordNetLemmatizer()
 
+    # Get all terms in database
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    cursor.execute("SELECT DISTINCT term FROM index_terms")
+    dbTerms = {term for (term,) in cursor.fetchall()}
+
     # Process query:
     # Make lowercase
     query = query.lower()
     # Remove special characters and punctuation
     query = re.sub(r'[^a-zA-Z0-9 ]', '', query)
+    # Tokenize query
+    tokenized_query = query.split()
 
     # Additional spellchecking step
+    corrected_query = []
     if not use_raw_query:
-        corrected_query = str(TextBlob(query).correct())
+        for term in tokenized_query:
+            # Check if term is listed on any indexed site
+            if term not in dbTerms:
+                # Correct spelling
+                corrected_query.append(str(TextBlob(term).correct()))
+            else:
+                corrected_query.append(term)
     else:
-        corrected_query = query
+        corrected_query = tokenized_query
 
-    # Tokenize query
-    tokenized_query = corrected_query.split()
     # Remove stop words
     stop_words = set(stopwords.words('english'))
-    filtered_query = [w for w in tokenized_query if w not in stop_words]
+    filtered_query = [w for w in corrected_query if w not in stop_words]
 
     # Lemmatize text
     tagged = pos_tag(filtered_query)
@@ -56,9 +69,6 @@ def search(query, use_raw_query=False, limit=20):
 
 
     # Search database for terms
-    connection = sqlite3.connect(DB_PATH)
-    cursor = connection.cursor()
-    
     scores = defaultdict(float)
     
     for term in lemmatized_query:
@@ -82,7 +92,7 @@ def search(query, use_raw_query=False, limit=20):
         
     connection.close()
     
-    return results, query, corrected_query
+    return results, query, ' '.join(corrected_query)
 
 # Extracts a text snippet containing one of the search terms to display below the link
 def extract_snippet(text, terms):
