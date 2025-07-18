@@ -3,26 +3,27 @@ from query_engine import search
 
 app = Flask(__name__)
 
-@app.route("/search", methods=["GET"])
-def handle_search():
-    query = request.args.get("q")
-    use_raw = request.args.get("raw", "false").lower() == "true"
-    
-    if not query:
-        return jsonify({"error": "Missing query"}), 400
-    
-    results, original_query, corrected_query = search(query, use_raw_query=use_raw)
-    
-    return jsonify({
-        "original_query": original_query,
-        "corrected_query": corrected_query,
-        "used_raw_query": use_raw,
-        "results": results
-    })
-    
-@app.route("/")
-def index():
-    return render_template("index.html")
+@app.route('/')
+def home():
+    return render_template('home.html')
+
+@app.route('/search')
+def search_route():
+    query = request.args.get('q', '')
+    raw = request.args.get('raw') == 'true'
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # If it's an AJAX fetch from JS, return JSON
+        results, original_query, corrected_query = search(query, use_raw_query=raw)
+        return jsonify({
+            "results": results,
+            "original_query": original_query,
+            "corrected_query": corrected_query,
+            "used_raw_query": raw
+        })
+    else:
+        # If it's a browser visit from home.html, render search page
+        return render_template("search.html")
     
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to My Search Engine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body class="home">
+  <div class="logo">🔍 MySearch</div>
+  <p>This is a basic search engine demo. Type a search query below to get started.</p>
+  <form action="/search" method="get" id="searchForm">
+    <div class="input-wrapper">
+      <input type="text" id="query" name="q" placeholder="Search something..." size="40" required autocomplete="off">
+      <div id="historyDropdown"></div>
+    </div>
+    <div class="button-group">
+      <button type="submit">Search</button>
+      <button type="button" id="deleteHistory">Delete History</button>
+    </div>
+  </form>
+  <script src="{{ url_for('static', filename='history_dropdown.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Search Engine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body>
+  <h1>Search</h1>
+  <div class="search-container">
+  <form action="/search" method="get" id="search-form">
+    <input id="query" type="text" name="q" value="{{ query }}" placeholder="Search..." autocomplete="off" required>
+    <div id="historyDropdown" class="dropdown-menu"></div>
+    <button type="submit">Search</button>
+  </form>
+</div>
+
+  <div id="correction" style="margin-top: 1em;"></div>
+  <div id="results" style="margin-top: 2em;"></div>
+
+  <script src="{{ url_for('static', filename='history_dropdown.js') }}"></script>
+  <script>
+    async function handleSearchEvent(query, raw = false, push = true) {
+      const queryInput = document.getElementById('query');
+      queryInput.value = query;
+
+      if (push) {
+        const newUrl = `?q=${encodeURIComponent(query)}${raw ? '&raw=true' : ''}`;
+        history.pushState(null, '', newUrl);
+      }
+
+      const response = await fetch(`/search?q=${encodeURIComponent(query)}${raw ? '&raw=true' : ''}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      const data = await response.json();
+
+      const resultsContainer = document.getElementById('results');
+      const correctionContainer = document.getElementById('correction');
+
+      resultsContainer.innerHTML = '';
+      correctionContainer.innerHTML = '';
+
+      if (data.original_query !== data.corrected_query && !data.used_raw_query) {
+        correctionContainer.innerHTML = `
+          Showing results for <b>${data.corrected_query}</b>. 
+          <a href="?q=${encodeURIComponent(data.original_query)}&raw=true">Search instead for "${data.original_query}"</a>
+        `;
+      }
+
+      if (data.results.length === 0) {
+        resultsContainer.innerHTML = "<p>No results found.</p>";
+      } else {
+        data.results.forEach(result => {
+          const div = document.createElement('div');
+          div.className = "result";
+          div.innerHTML = `
+            <a href="${result.url}" target="_blank"><h3>${result.title}</h3></a>
+            <p>${result.snippet}</p>
+            <small>Relevance Score: ${result.score.toFixed(3)}</small>
+          `;
+          resultsContainer.appendChild(div);
+        });
+      }
+
+      document.title = `Search results for "${query}"`;
+      queryInput.blur();
+      // Hide dropdown immediately before history is updated/rendered
+      const dropdown = document.getElementById('historyDropdown');
+      if (dropdown) dropdown.style.display = 'none';
+
+      if (typeof updateSearchHistory === 'function') {
+        updateSearchHistory(query); // from imported JS
+      }
+    }
+
+    document.getElementById('search-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const query = document.getElementById('query').value.trim();
+      if (query) {
+        handleSearchEvent(query);
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get('q');
+      const raw = params.get('raw') === 'true';
+      if (query) {
+        document.getElementById('query').value = query;
+        history.replaceState(null, '', window.location.href);
+        handleSearchEvent(query, raw, false);
+      }
+    });
+
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get('q');
+      const raw = params.get('raw') === 'true';
+      if (query) {
+        handleSearchEvent(query, raw, false);
+      } else {
+        document.getElementById('query').value = '';
+        document.getElementById('results').innerHTML = '';
+        document.getElementById('correction').innerHTML = '';
+        document.title = 'My Search Engine';
+      }
+    });
+  </script>
+</body>
+</html>
